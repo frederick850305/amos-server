@@ -1,0 +1,50 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: amos-server
+  profiles:
+    active: postgres   # 默认连本地 PostgreSQL（见下方 postgres profile）。需改回 H2 时删掉此行即可。
+  # 运行要求 JDK 17（项目为 Spring Boot 3.2.5）。本机可用 Temurin 17：
+  #   export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
+  # 启动命令（已默认 postgres profile，无需再带 -D 参数）：
+  #   cd amos-app && mvn spring-boot:run
+  datasource:
+    url: jdbc:h2:mem:amos;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+amos:
+  security:
+    enabled: false
+
+---
+# 真实 PostgreSQL 环境（需先建库：CREATE DATABASE amos;）
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/amos
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
