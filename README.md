@@ -16,10 +16,10 @@ AMOS 后端服务（Spring Boot 3.2.5 + Flyway）。为 `amos` 前端（github.c
 前置：本机用 OrbStack 跑 PostgreSQL 17 开发库（容器 `pg17-local`，库名 `amos`，账号 `postgres/postgres`），参考 `docs/postgres-setup.md`。
 
 ```bash
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
-cd amos-app
-mvn spring-boot:run          # 默认 postgres profile，连 localhost:5432/amos
+./scripts/start.sh          # 默认 postgres profile，连 localhost:5432/amos
 ```
+
+> `scripts/start.sh` 会自动设置 `JAVA_HOME`（读取仓库根 `.java-version` 指向本机 Temurin）并进入 `amos-app` 模块，无需手动 export。
 
 启动后健康检查：`GET http://localhost:8080/actuator/health`
 
@@ -28,9 +28,7 @@ mvn spring-boot:run          # 默认 postgres profile，连 localhost:5432/amos
 无需本地 PG，用内置 H2 内存库（`MODE=PostgreSQL`，与 PG 跑同一套 Flyway 迁移）：
 
 ```bash
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/temurin-17.jdk/Contents/Home
-cd amos-app
-mvn spring-boot:run -Dspring-boot.run.arguments="--spring.profiles.active=default --server.port=8081"
+./scripts/start.sh --spring.profiles.active=default --server.port=8081
 ```
 
 日志出现 `Successfully applied N migrations ... now at version vN` 且 `/actuator/health` 返回 200，即说明迁移在 H2 上同样跑通。详细搭建与双跑说明见 `docs/postgres-setup.md`。
