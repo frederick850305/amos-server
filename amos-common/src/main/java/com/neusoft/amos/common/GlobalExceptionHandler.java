@@ -1,8 +1,10 @@
 package com.neusoft.amos.common;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * 全局异常处理：将未捕获异常统一包装为 {@link ApiResponse}。
@@ -18,5 +20,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ApiResponse<Void> handleIllegal(IllegalArgumentException e) {
         return new ApiResponse<>(400, e.getMessage(), null);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Void>> handleResponseStatus(ResponseStatusException e) {
+        return ResponseEntity.status(e.getStatusCode())
+                .body(new ApiResponse<>(e.getStatusCode().value(), e.getReason(), null));
     }
 }
