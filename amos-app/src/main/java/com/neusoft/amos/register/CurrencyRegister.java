@@ -6,15 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 注册表：合格制造商（Address Register）。
- * 对应 mock/index.js 的 makerRegistry；被 stockTypes / components 的 maker 字段引用。
+ * 注册表：币种（手册 Chapter 4 Purchasing / Financials）。被 vendors / purchase_forms / budgets 引用。
  */
 @Entity
-@Table(name = "maker_register")
+@Table(name = "currency_register")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MakerRegister {
+public class CurrencyRegister {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,10 +23,8 @@ public class MakerRegister {
     private String code;
 
     private String name;
+    private String symbol;
 
     @Column(nullable = false)
     private String status = "ACTIVE";
-
-    @Column(length = 1000)
-    private String remarks;
 }

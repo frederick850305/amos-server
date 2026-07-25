@@ -7,16 +7,16 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/register/makers")
-public class MakerRegisterController extends RegisterController<MakerRegister, MakerRegisterRepository> {
+@RequestMapping("/api/register/currencies")
+public class CurrencyRegisterController extends RegisterController<CurrencyRegister, CurrencyRegisterRepository> {
 
-    public MakerRegisterController(MakerRegisterRepository repository) {
+    public CurrencyRegisterController(CurrencyRegisterRepository repository) {
         super(repository);
     }
 
     @Override
     protected List<String> searchableFields() {
-        return List.of("code", "name");
+        return List.of("code", "name", "symbol");
     }
 
     @Override
@@ -25,7 +25,7 @@ public class MakerRegisterController extends RegisterController<MakerRegister, M
     }
 
     @Override
-    protected void applyDeactivate(MakerRegister entity) {
+    protected void applyDeactivate(CurrencyRegister entity) {
         entity.setStatus("INACTIVE");
     }
 }

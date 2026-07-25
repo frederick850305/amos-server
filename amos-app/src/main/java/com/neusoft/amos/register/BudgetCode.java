@@ -6,15 +6,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 注册表：合格制造商（Address Register）。
- * 对应 mock/index.js 的 makerRegistry；被 stockTypes / components 的 maker 字段引用。
+ * 注册表：预算代码（手册 Chapter 5 Budget Codes, printed page 348）。被 budgets.budget_code 引用。
  */
 @Entity
-@Table(name = "maker_register")
+@Table(name = "budget_code")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MakerRegister {
+public class BudgetCode {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,10 +23,9 @@ public class MakerRegister {
     private String code;
 
     private String name;
+    private String parentBudgetCode;
+    private String description;
 
     @Column(nullable = false)
     private String status = "ACTIVE";
-
-    @Column(length = 1000)
-    private String remarks;
 }

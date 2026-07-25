@@ -6,24 +6,26 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 注册表：合格制造商（Address Register）。
- * 对应 mock/index.js 的 makerRegistry；被 stockTypes / components 的 maker 字段引用。
+ * 注册表：地点（手册 Chapter 3 Stock Item Locations）。
+ * 安装地点作用域 + 自引用父级（支持层级）。被 components / stock_items / deliveries 引用。
  */
 @Entity
-@Table(name = "maker_register")
+@Table(name = "location_register",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"installation_id", "code"}))
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class MakerRegister {
+public class LocationRegister {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    private Long installationId;
     private String code;
-
     private String name;
+    private Long parentLocationId;
+    private String locationType;
 
     @Column(nullable = false)
     private String status = "ACTIVE";
