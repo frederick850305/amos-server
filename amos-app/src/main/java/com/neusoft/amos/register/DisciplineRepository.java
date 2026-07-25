@@ -3,6 +3,6 @@ package com.neusoft.amos.register;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
-public interface MakerRegisterRepository
-        extends JpaRepository<MakerRegister, Long>, JpaSpecificationExecutor<MakerRegister> {
+public interface DisciplineRepository
+        extends JpaRepository<Discipline, Long>, JpaSpecificationExecutor<Discipline> {
 }
