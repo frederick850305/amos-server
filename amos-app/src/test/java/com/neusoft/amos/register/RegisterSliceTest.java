@@ -136,6 +136,12 @@ class RegisterSliceTest {
                 .andExpect(status().isConflict());
 
         mvc.perform(delete("/api/register/function-criticalities/" + id)).andExpect(status().isNoContent());
+
+        // 物理删除：记录真正消失（GET 单条 404，列表不再含该 degree）
+        mvc.perform(get("/api/register/function-criticalities/" + id)).andExpect(status().isNotFound());
+        mvc.perform(get("/api/register/function-criticalities"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.degree == 'MAJ')]").isEmpty());
     }
 
     @Test
