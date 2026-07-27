@@ -11,6 +11,7 @@ public class ComponentStatusLogDto {
     private Long id;
     private Long componentId;
     private String componentNo;
+    private String componentName;
     private String oldStatus;
     private String newStatus;
     private String reason;

@@ -130,8 +130,17 @@ public class ComponentService {
     }
 
     public List<ComponentStatusLogDto> getStatusLog(Long id) {
+        Component comp = findOrThrow(id);
         return statusLogRepository.findByComponentIdOrderByChangedAtDescIdDesc(id).stream()
-                .map(this::toStatusLogDto)
+                .map(l -> toStatusLogDto(l, comp.getName()))
+                .collect(Collectors.toList());
+    }
+
+    public List<ComponentStatusLogDto> getAllStatusLogs() {
+        Map<Long, String> nameById = componentRepository.findAll().stream()
+                .collect(Collectors.toMap(Component::getId, Component::getName, (a, b) -> a));
+        return statusLogRepository.findAllByOrderByChangedAtDescIdDesc().stream()
+                .map(l -> toStatusLogDto(l, nameById.get(l.getComponentId())))
                 .collect(Collectors.toList());
     }
 
@@ -303,11 +312,12 @@ public class ComponentService {
         }
     }
 
-    private ComponentStatusLogDto toStatusLogDto(ComponentStatusLog l) {
+    private ComponentStatusLogDto toStatusLogDto(ComponentStatusLog l, String name) {
         ComponentStatusLogDto d = new ComponentStatusLogDto();
         d.setId(l.getId());
         d.setComponentId(l.getComponentId());
         d.setComponentNo(l.getComponentNo());
+        d.setComponentName(name);
         d.setOldStatus(l.getOldStatus());
         d.setNewStatus(l.getNewStatus());
         d.setReason(l.getReason());
