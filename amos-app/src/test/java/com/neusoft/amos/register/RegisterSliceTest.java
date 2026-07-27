@@ -137,11 +137,14 @@ class RegisterSliceTest {
 
         mvc.perform(delete("/api/register/function-criticalities/" + id)).andExpect(status().isNoContent());
 
-        // 物理删除：记录真正消失（GET 单条 404，列表不再含该 degree）
-        mvc.perform(get("/api/register/function-criticalities/" + id)).andExpect(status().isNotFound());
+        // 软删：记录仍存在、active=false（置为失效，而非物理移除）
+        mvc.perform(get("/api/register/function-criticalities/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.active").value(false));
+        // 列表默认仍含该 degree（以 active=false 过滤可查到）
         mvc.perform(get("/api/register/function-criticalities"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.degree == 'MAJ')]").isEmpty());
+                .andExpect(jsonPath("$[?(@.degree == 'MAJ')]").isNotEmpty());
     }
 
     @Test

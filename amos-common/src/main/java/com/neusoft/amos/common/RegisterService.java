@@ -93,14 +93,6 @@ public class RegisterService<T, R extends JpaRepository<T, Long> & JpaSpecificat
         return repository.save(entity);
     }
 
-    /** 物理删除（真正从库移除记录）。仅用于无外键引用、允许硬删的 register（如 function_criticality）。 */
-    public void delete(Long id) {
-        if (!repository.existsById(id)) {
-            throw new IllegalArgumentException("not found: " + id);
-        }
-        repository.deleteById(id);
-    }
-
     /** 将主键写回实体（泛型无法静态感知 @Id，故用反射注入）。 */
     private void setId(T entity, Long id) {
         try {
