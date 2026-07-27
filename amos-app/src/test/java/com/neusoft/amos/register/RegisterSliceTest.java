@@ -156,4 +156,53 @@ class RegisterSliceTest {
                 .andExpect(status().isConflict());
         mvc.perform(delete("/api/register/budget-codes/" + id)).andExpect(status().isNoContent());
     }
+
+    @Test
+    void paginationReturnsPageEnvelopeAndRespectsFilters() throws Exception {
+        // 无分页参数时仍为向后兼容的 List（数组）
+        mvc.perform(get("/api/register/units"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].code").exists());
+
+        // 造 3 条 unit 用于分页
+        for (String c : new String[]{"U-A", "U-B", "U-C"}) {
+            mvc.perform(post("/api/register/units")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"code\":\"" + c + "\",\"name\":\"Unit " + c + "\"}"))
+                    .andExpect(status().isCreated());
+        }
+
+        // page=0&size=2 -> Spring Page 信封
+        mvc.perform(get("/api/register/units").param("page", "0").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.number").value(0))
+                .andExpect(jsonPath("$.totalElements").value(4))   // PCS + U-A/B/C
+                .andExpect(jsonPath("$.totalPages").value(2))
+                .andExpect(jsonPath("$.content.length()").value(2));
+
+        // q + 分页组合：仅匹配 U-*，totalElements=3
+        mvc.perform(get("/api/register/units").param("q", "U-").param("page", "0").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))
+                .andExpect(jsonPath("$.content[0].code").value("U-A"));
+    }
+
+    @Test
+    void locationPaginationRespectsInstallationFilterAtQueryLevel() throws Exception {
+        // 在专用 installation 998 下造 3 条，验证查询级过滤后再分页（避开其它测试的 999）
+        for (String c : new String[]{"P-L1", "P-L2", "P-L3"}) {
+            mvc.perform(post("/api/register/locations")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"installationId\":998,\"code\":\"" + c + "\",\"name\":\"" + c + "\"}"))
+                    .andExpect(status().isCreated());
+        }
+
+        mvc.perform(get("/api/register/locations")
+                        .param("installation", "998").param("page", "0").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(3))   // 仅 998 下的 3 条，而非全部 location
+                .andExpect(jsonPath("$.content.length()").value(2));
+    }
 }
