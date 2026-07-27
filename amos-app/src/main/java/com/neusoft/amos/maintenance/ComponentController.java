@@ -51,6 +51,11 @@ public class ComponentController {
         return service.getHierarchy();
     }
 
+    @GetMapping("/status-log")
+    public List<ComponentStatusLogDto> allStatusLogs() {
+        return service.getAllStatusLogs();
+    }
+
     @GetMapping("/{id}")
     public ComponentDto get(@PathVariable Long id) {
         return service.get(id);
