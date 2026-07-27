@@ -7,4 +7,6 @@ public interface ComponentTypeRepository extends JpaRepository<ComponentType, Lo
         JpaSpecificationExecutor<ComponentType> {
 
     boolean existsByTypeNumber(String typeNumber);
+
+    java.util.Optional<ComponentType> findByTypeNumber(String typeNumber);
 }

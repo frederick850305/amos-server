@@ -7,6 +7,7 @@ import com.neusoft.amos.maintenance.dto.ComponentTypeRelatedTypeDto;
 import com.neusoft.amos.maintenance.dto.ComponentTypeStockTypeDto;
 import com.neusoft.amos.maintenance.dto.RegisterComponentRequest;
 import com.neusoft.amos.stock.StockType;
+import com.neusoft.amos.stock.StockTypeRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,6 +30,7 @@ public class ComponentTypeService {
     private final ComponentTypeRepository typeRepository;
     private final ComponentRepository componentRepository;
     private final ComponentCounterRepository counterRepository;
+    private final StockTypeRepository stockTypeRepository;
 
     public List<ComponentTypeDto> list(String status, String maker, String classCode,
                                        String typeNumber, String name) {
@@ -165,6 +167,7 @@ public class ComponentTypeService {
             dto.setQuantity(s.getQuantity());
             dto.setMakersRef(s.getMakersRef());
             dto.setRemarks(s.getRemarks());
+            dto.setAlternativeNo(s.getAlternativeNo());
             return dto;
         }).collect(Collectors.toList()));
 
@@ -225,6 +228,11 @@ public class ComponentTypeService {
                 ComponentType rel = new ComponentType();
                 rel.setId(rd.getRelatedComponentTypeId());
                 r.setRelatedComponentType(rel);
+            } else if (rd.getRelatedTypeNumber() != null) {
+                ComponentType rel = typeRepository.findByTypeNumber(rd.getRelatedTypeNumber())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "related component type not found: " + rd.getRelatedTypeNumber()));
+                r.setRelatedComponentType(rel);
             } else {
                 r.setRelatedComponentType(null);
             }
@@ -242,9 +250,15 @@ public class ComponentTypeService {
                 StockType st = new StockType();
                 st.setId(sd.getStockTypeId());
                 s.setStockType(st);
+            } else if (sd.getStockTypeNo() != null) {
+                StockType st = stockTypeRepository.findByStockTypeNo(sd.getStockTypeNo())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "stock type not found: " + sd.getStockTypeNo()));
+                s.setStockType(st);
             } else {
                 s.setStockType(null);
             }
+            s.setAlternativeNo(sd.getAlternativeNo());
             s.setQuantity(sd.getQuantity());
             s.setMakersRef(sd.getMakersRef());
             s.setRemarks(sd.getRemarks());
