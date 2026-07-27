@@ -6,13 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * 组件计数器。dependsOn 指向另一组件（如活塞依赖主机 C-10001）实现读数级联。
+ * 组件测点（手册 P35 Component Measure Points）。对应前端 Measure Points 子表。
  */
 @Entity
-@Table(name = "component_counter")
+@Table(name = "component_measure_point")
 @Data
 @NoArgsConstructor
-public class ComponentCounter {
+public class ComponentMeasurePoint {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -26,11 +26,8 @@ public class ComponentCounter {
     private String code;
     private String description;
     private String unit;
-    private Double currentValue;
-    private String dependsOn;
-
-    private String latestZeroedDate;
-    private java.math.BigDecimal startValue;
-    private java.math.BigDecimal average;
-    private String calculate;
+    private String trend;
+    @Column(name = "reading")
+    private String value;
+    private String lastReadDate;
 }

@@ -37,6 +37,14 @@ public class Component {
     private String installDate;
     private String installation;
 
+    private String parentComponent;
+    private String componentTypeModel;
+    private String dateCreated;
+    private String dateModified;
+
     @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ComponentCounter> componentCounters = new ArrayList<>();
+
+    @OneToMany(mappedBy = "component", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ComponentMeasurePoint> componentMeasurePoints = new ArrayList<>();
 }
