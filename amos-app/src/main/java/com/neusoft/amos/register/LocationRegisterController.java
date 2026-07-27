@@ -1,13 +1,11 @@
 package com.neusoft.amos.register;
 
 import com.neusoft.amos.common.RegisterController;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/register/locations")
@@ -32,19 +30,18 @@ public class LocationRegisterController extends RegisterController<LocationRegis
         entity.setStatus("INACTIVE");
     }
 
-    /** 在通用 q/status 搜索之上叠加 installation / parentId 过滤（手册要求）。 */
+    /** 在通用 q/status 搜索之上叠加 installation / parentId 过滤（查询级，保证分页正确）。 */
     @Override
-    protected List<LocationRegister> applyExtraFilters(List<LocationRegister> result,
-                                                       Long installation,
-                                                       Long parentId,
-                                                       Boolean active) {
-        List<LocationRegister> all = result;
+    protected Specification<LocationRegister> applyExtraSpec(Specification<LocationRegister> spec,
+                                                            Long installation,
+                                                            Long parentId,
+                                                            Boolean active) {
         if (installation != null) {
-            all = all.stream().filter(l -> installation.equals(l.getInstallationId())).collect(Collectors.toList());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("installationId"), installation));
         }
         if (parentId != null) {
-            all = all.stream().filter(l -> parentId.equals(l.getParentLocationId())).collect(Collectors.toList());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("parentLocationId"), parentId));
         }
-        return all;
+        return spec;
     }
 }

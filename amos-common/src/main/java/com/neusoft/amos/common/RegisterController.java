@@ -1,5 +1,10 @@
 package com.neusoft.amos.common;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.http.HttpStatus;
@@ -47,20 +52,62 @@ public abstract class RegisterController<T, R extends JpaRepository<T, Long> & J
     /** 软删：把记录置为失效（INACTIVE / active=false）。遵循 data-model 不物理删除原则。 */
     protected abstract void applyDeactivate(T entity);
 
+    /**
+     * 列表查询。支持可选分页：传 {@code page}/{@code size}（及可选 {@code sort=field,dir}）
+     * 时返回 Spring Data {@link Page} 信封（content / totalElements / totalPages …）；
+     * 不传分页参数时返回 {@link List}（前端通用管理窗口默认路径，向后兼容）。
+     *
+     * <p>q / status / installation / parentId / active 全部在查询级（Specification）完成，
+     * 因此分页计数始终基于过滤后的真实结果集。</p>
+     */
     @GetMapping
-    public List<T> list(@RequestParam(required = false) String q,
-                        @RequestParam(required = false) String status,
-                        @RequestParam(required = false) Long installation,
-                        @RequestParam(required = false) Long parentId,
-                        @RequestParam(required = false) Boolean active) {
-        List<T> result = service.search(q, status, searchableFields(), statusField());
-        return applyExtraFilters(result, installation, parentId, active);
+    public Object list(@RequestParam(required = false) String q,
+                       @RequestParam(required = false) String status,
+                       @RequestParam(required = false) Long installation,
+                       @RequestParam(required = false) Long parentId,
+                       @RequestParam(required = false) Boolean active,
+                       @RequestParam(required = false) Integer page,
+                       @RequestParam(required = false) Integer size,
+                       @RequestParam(required = false) String sort) {
+        Specification<T> spec = service.buildSpec(q, status, searchableFields(), statusField());
+        spec = applyExtraSpec(spec, installation, parentId, active);
+        if (page != null || size != null) {
+            Pageable pageable = buildPageable(page, size, sort);
+            return service.findAll(spec, pageable);
+        }
+        return service.findAll(spec);
+    }
+
+    /** 根据可选分页参数构造 Pageable；page/size 任一出现即启用分页，缺省 page=0、size=20。 */
+    private Pageable buildPageable(Integer page, Integer size, String sort) {
+        int p = page != null ? page : 0;
+        int s = size != null ? size : 20;
+        if (sort != null && !sort.isBlank()) {
+            String[] parts = sort.split(",");
+            Sort.Direction dir = parts.length > 1 && "desc".equalsIgnoreCase(parts[1])
+                    ? Sort.Direction.DESC : Sort.Direction.ASC;
+            return PageRequest.of(p, s, Sort.by(dir, parts[0]));
+        }
+        return PageRequest.of(p, s);
     }
 
     /**
      * 子类可重写以叠加 register 专属过滤（如 location 的 installation/parentId、
-     * function_criticality 的 active）。默认原样返回。参数为 null 时忽略。
+     * function_criticality 的 active）。必须在查询级（Specification）完成，以保证分页正确。
+     * 默认原样返回。参数为 null 时忽略。
      */
+    protected Specification<T> applyExtraSpec(Specification<T> spec,
+                                              Long installation,
+                                              Long parentId,
+                                              Boolean active) {
+        return spec;
+    }
+
+    /**
+     * @deprecated 改为查询级的 {@link #applyExtraSpec}（否则分页计数会错位）。
+     * 默认实现保留以兼容旧子类，但基类不再调用。
+     */
+    @Deprecated
     protected List<T> applyExtraFilters(List<T> result,
                                         Long installation,
                                         Long parentId,

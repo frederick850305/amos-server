@@ -1,6 +1,8 @@
 package com.neusoft.amos.common;
 
 import jakarta.persistence.Id;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -26,7 +28,8 @@ public class RegisterService<T, R extends JpaRepository<T, Long> & JpaSpecificat
         this.repository = repository;
     }
 
-    public List<T> search(String q, String status, List<String> searchFields, String statusField) {
+    /** 由 q（模糊搜索）+ status（状态/active 过滤）构造查询级 Specification。 */
+    public Specification<T> buildSpec(String q, String status, List<String> searchFields, String statusField) {
         Specification<T> spec = Specification.where(null);
         if (q != null && !q.isBlank()) {
             String like = "%" + q.toLowerCase() + "%";
@@ -48,7 +51,23 @@ public class RegisterService<T, R extends JpaRepository<T, Long> & JpaSpecificat
                 return cb.equal(path.as(String.class), s);
             });
         }
+        return spec;
+    }
+
+    /** 全量（不分页）查询：返回 List，前端通用管理窗口默认走此路径（向后兼容）。 */
+    public List<T> findAll(Specification<T> spec) {
         return repository.findAll(spec);
+    }
+
+    /** 分页查询：返回 Spring Data Page 信封（content / totalElements / totalPages ...）。 */
+    public Page<T> findAll(Specification<T> spec, Pageable pageable) {
+        return repository.findAll(spec, pageable);
+    }
+
+    /** @deprecated 保留以兼容旧调用；新代码请直接用 {@link #findAll(Specification)}。 */
+    @Deprecated
+    public List<T> search(String q, String status, List<String> searchFields, String statusField) {
+        return findAll(buildSpec(q, status, searchFields, statusField));
     }
 
     public T get(Long id) {

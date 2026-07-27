@@ -1,13 +1,11 @@
 package com.neusoft.amos.register;
 
 import com.neusoft.amos.common.RegisterController;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/register/function-criticalities")
@@ -33,15 +31,15 @@ public class FunctionCriticalityController
         entity.setActive(false);
     }
 
-    /** 手册要求按 active 布尔过滤；叠加在通用 status(active) 过滤之上。 */
+    /** 手册要求按 active 布尔过滤；查询级叠加，保证分页正确。 */
     @Override
-    protected List<FunctionCriticality> applyExtraFilters(List<FunctionCriticality> result,
-                                                          Long installation,
-                                                          Long parentId,
-                                                          Boolean active) {
+    protected Specification<FunctionCriticality> applyExtraSpec(Specification<FunctionCriticality> spec,
+                                                               Long installation,
+                                                               Long parentId,
+                                                               Boolean active) {
         if (active != null) {
-            return result.stream().filter(f -> active.equals(f.getActive())).collect(Collectors.toList());
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("active"), active));
         }
-        return result;
+        return spec;
     }
 }
