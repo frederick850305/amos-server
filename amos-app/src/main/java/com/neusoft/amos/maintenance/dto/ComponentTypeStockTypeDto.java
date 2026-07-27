@@ -11,4 +11,5 @@ public class ComponentTypeStockTypeDto {
     private Double quantity;
     private String makersRef;
     private String remarks;
+    private String alternativeNo;
 }

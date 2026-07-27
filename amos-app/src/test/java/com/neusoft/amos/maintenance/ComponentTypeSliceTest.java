@@ -4,7 +4,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.neusoft.amos.maintenance.dto.ComponentTypeCounterDefDto;
 import com.neusoft.amos.maintenance.dto.ComponentTypeDto;
 import com.neusoft.amos.maintenance.dto.ComponentTypeMeasurePointDefDto;
+import com.neusoft.amos.maintenance.dto.ComponentTypeRelatedTypeDto;
+import com.neusoft.amos.maintenance.dto.ComponentTypeStockTypeDto;
 import com.neusoft.amos.maintenance.dto.RegisterComponentRequest;
+import com.neusoft.amos.stock.StockType;
+import com.neusoft.amos.stock.StockTypeRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -33,6 +37,9 @@ class ComponentTypeSliceTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private StockTypeRepository stockTypeRepository;
 
     @Test
     void componentTypeSliceFlow() throws Exception {
@@ -111,6 +118,71 @@ class ComponentTypeSliceTest {
 
         // 清理
         mockMvc.perform(delete("/api/maintenance/component-types/" + id))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 业务键解析：按 relatedTypeNumber / stockTypeNo 关联，并持久化 alternativeNo。
+     */
+    @Test
+    void relatedAndStockTypeBusinessKeys() throws Exception {
+        // 种子：一个备件类型，供 stockTypeNo 解析
+        StockType st = new StockType();
+        st.setStockTypeNo("ST-TEST-1");
+        st.setDescription("Test Stock");
+        st = stockTypeRepository.save(st);
+
+        // 被关联的类型 CT-REL-1
+        ComponentTypeDto rel = new ComponentTypeDto();
+        rel.setTypeNumber("CT-REL-1");
+        rel.setName("Related Type");
+        rel.setStatus("Active");
+        String relBody = mockMvc.perform(post("/api/maintenance/component-types")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(rel)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        ComponentTypeDto relCreated = objectMapper.readValue(relBody, ComponentTypeDto.class);
+
+        // 主类型：按 typeNumber 关联 + 按 stockTypeNo 挂备件（含 alternativeNo）
+        ComponentTypeDto dto = new ComponentTypeDto();
+        dto.setTypeNumber("CT-KEY-1");
+        dto.setName("Key Type");
+        dto.setStatus("Active");
+
+        ComponentTypeRelatedTypeDto rd = new ComponentTypeRelatedTypeDto();
+        rd.setRelatedTypeNumber("CT-REL-1");
+        dto.getRelatedTypes().add(rd);
+
+        ComponentTypeStockTypeDto sd = new ComponentTypeStockTypeDto();
+        sd.setStockTypeNo("ST-TEST-1");
+        sd.setAlternativeNo("ALT-1");
+        sd.setQuantity(2.0);
+        dto.getStockTypeLinks().add(sd);
+
+        String createdBody = mockMvc.perform(post("/api/maintenance/component-types")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.relatedTypes[0].relatedTypeNumber").value("CT-REL-1"))
+                .andExpect(jsonPath("$.relatedTypes[0].relatedTypeName").value("Related Type"))
+                .andExpect(jsonPath("$.stockTypeLinks[0].stockTypeNo").value("ST-TEST-1"))
+                .andExpect(jsonPath("$.stockTypeLinks[0].alternativeNo").value("ALT-1"))
+                .andReturn().getResponse().getContentAsString();
+
+        ComponentTypeDto created = objectMapper.readValue(createdBody, ComponentTypeDto.class);
+        Long id = created.getId();
+
+        // GET 回显验证
+        mockMvc.perform(get("/api/maintenance/component-types/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.relatedTypes[0].relatedTypeNumber").value("CT-REL-1"))
+                .andExpect(jsonPath("$.stockTypeLinks[0].alternativeNo").value("ALT-1"));
+
+        // 清理（先删主类型解除外键，再删被关联类型）
+        mockMvc.perform(delete("/api/maintenance/component-types/" + id))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(delete("/api/maintenance/component-types/" + relCreated.getId()))
                 .andExpect(status().isNoContent());
     }
 }

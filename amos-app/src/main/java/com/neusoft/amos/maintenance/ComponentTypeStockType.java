@@ -31,4 +31,7 @@ public class ComponentTypeStockType {
     private String makersRef;
     private Double quantity;
     private String remarks;
+
+    @Column(name = "alternative_no")
+    private String alternativeNo;
 }
