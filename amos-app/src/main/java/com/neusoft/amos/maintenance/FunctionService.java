@@ -31,6 +31,7 @@ public class FunctionService {
     private final ComponentFunctionRotationRepository rotationRepository;
     private final ComponentFunctionHistoryRepository functionHistoryRepository;
     private final ComponentRepository componentRepository;
+    private final ComponentStatusLogRepository statusLogRepository;
 
     private static final String PERFORMED_BY = "A. Admin";
 
@@ -108,7 +109,7 @@ public class FunctionService {
         return result;
     }
 
-    // ---- 安装组件：联动维护 component 状态，写轮次/历史日志 ----
+    // ---- 安装组件：联动维护 component 状态，写轮次/历史/状态日志 ----
     @Transactional
     public FunctionDto installComponent(Long id, InstallComponentRequest req) {
         MaintenanceFunction fn = findOrThrow(id);
@@ -118,15 +119,28 @@ public class FunctionService {
         }
         Component comp = componentRepository.findByNumber(componentNumber)
                 .orElseThrow(() -> new IllegalArgumentException("component not found: " + componentNumber));
+        // 组件已装在别的 function 上 -> 必须先显式拆卸（不允许隐式跨位置搬迁）
+        if (comp.getFunctionNo() != null && !comp.getFunctionNo().isBlank()
+                && !comp.getFunctionNo().equals(fn.getFunctionNo())) {
+            throw new IllegalArgumentException(
+                    "component already installed on function " + comp.getFunctionNo() + ", remove it first");
+        }
+        // 同一组件重复装到同一 function -> 明确错误
+        if (comp.getFunctionNo() != null && comp.getFunctionNo().equals(fn.getFunctionNo())
+                && fn.getInstalledComponentNo() != null && fn.getInstalledComponentNo().equals(componentNumber)) {
+            throw new IllegalArgumentException("component already installed on this function");
+        }
         // 若已装其他组件，先拆卸旧的（回落 Available）
         if (fn.getInstalledComponentNo() != null && !fn.getInstalledComponentNo().equals(componentNumber)) {
             detachComponent(fn, "", "", "");
         }
         fn.setInstalledComponentNo(componentNumber);
         comp.setFunctionNo(fn.getFunctionNo());
+        String oldStatus = comp.getStatus();
         comp.setStatus("In Use");
         comp.setLocation(fn.getLocation());
         componentRepository.save(comp);
+        writeStatusLog(comp, oldStatus, "In Use", "Installed on " + fn.getFunctionNo());
         writeRotation(fn, comp.getId(), comp.getNumber(), comp.getName(), "Installed",
                 req.getDetails(), "", "", LocalDate.now().toString(), "");
         writeHistory(comp, fn, "Installed", req.getDetails());
@@ -137,6 +151,11 @@ public class FunctionService {
     @Transactional
     public FunctionDto removeComponent(Long id, RemoveComponentRequest req) {
         MaintenanceFunction fn = findOrThrow(id);
+        // 主 function 未装组件且未级联 -> 明确错误
+        if ((fn.getInstalledComponentNo() == null || fn.getInstalledComponentNo().isBlank())
+                && !Boolean.TRUE.equals(req.getCascadeSubFunctions())) {
+            throw new IllegalArgumentException("no component installed on function " + fn.getFunctionNo());
+        }
         detachComponent(fn, req.getNewLocation(), req.getStatus(), req.getDetails());
         if (Boolean.TRUE.equals(req.getCascadeSubFunctions())) {
             for (MaintenanceFunction sub : functionRepository.findByParentFunctionNo(fn.getFunctionNo())) {
@@ -162,11 +181,15 @@ public class FunctionService {
         Component comp = componentRepository.findByNumber(compNo).orElse(null);
         fn.setInstalledComponentNo(null);
         if (comp != null) {
+            String oldStatus = comp.getStatus();
             comp.setFunctionNo("");
+            String newStatus;
+            if (status != null && !status.isBlank()) newStatus = status;
+            else newStatus = "Available";
+            comp.setStatus(newStatus);
             if (newLocation != null && !newLocation.isBlank()) comp.setLocation(newLocation);
-            if (status != null && !status.isBlank()) comp.setStatus(status);
-            else comp.setStatus("Available");
             componentRepository.save(comp);
+            writeStatusLog(comp, oldStatus, newStatus, "Removed from " + fn.getFunctionNo());
         }
         writeRotation(fn, comp != null ? comp.getId() : null, compNo,
                 comp != null ? comp.getName() : "", "Removed",
@@ -191,6 +214,18 @@ public class FunctionService {
         r.setInstalledAt(installedAt != null ? installedAt : "");
         r.setRemovedAt(removedAt != null ? removedAt : "");
         rotationRepository.save(r);
+    }
+
+    private void writeStatusLog(Component comp, String oldStatus, String newStatus, String reason) {
+        ComponentStatusLog log = new ComponentStatusLog();
+        log.setComponentId(comp.getId());
+        log.setComponentNo(comp.getNumber());
+        log.setOldStatus(oldStatus);
+        log.setNewStatus(newStatus);
+        log.setReason(reason != null ? reason : "");
+        log.setChangedBy(PERFORMED_BY);
+        log.setChangedAt(LocalDate.now().toString());
+        statusLogRepository.save(log);
     }
 
     private void writeHistory(Component comp, MaintenanceFunction fn, String action, String details) {
