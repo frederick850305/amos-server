@@ -21,6 +21,18 @@ AMOS 后端服务（Spring Boot 3.2.5 + Flyway）。为 `amos` 前端（github.c
 
 > `scripts/start.sh` 会自动设置 `JAVA_HOME`（读取仓库根 `.java-version` 指向本机 Temurin）并进入 `amos-app` 模块，无需手动 export。
 
+**启动前的自动预检**（脚本内置，避免常见“启动失败”）：
+
+1. **端口冲突检测**：默认端口 `8080`（可被 `--server.port=` 覆盖）。若已被占用（最常见是上一轮没退出的 amos-server 实例），脚本会打印占用进程 PID 并 `SIGTERM`，等待最多 8 秒释放；仍未释放则 `SIGKILL`；若强杀后仍占用则报错退出并提示用 `lsof -i :<端口>` 排查。
+2. **PostgreSQL 可达性**：默认 `postgres` profile 时探测 `localhost:5432`，不可达仅给出警告（提示先 `cd ~/postgres-local && docker compose up -d`），不阻断启动。
+
+若仍想手动释放旧实例：
+
+```bash
+lsof -i :8080            # 查占用
+kill -9 <PID>            # 强杀
+```
+
 启动后健康检查：`GET http://localhost:8080/actuator/health`
 
 ### 2. H2 快速验证 / 演示（双跑）
