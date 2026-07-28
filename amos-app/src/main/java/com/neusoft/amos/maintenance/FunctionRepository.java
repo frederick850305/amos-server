@@ -11,5 +11,7 @@ public interface FunctionRepository extends JpaRepository<MaintenanceFunction, L
 
     Optional<MaintenanceFunction> findByFunctionNo(String functionNo);
 
+    Optional<MaintenanceFunction> findByFunctionNoAndInstallation(String functionNo, String installation);
+
     List<MaintenanceFunction> findByParentFunctionNo(String parentFunctionNo);
 }
