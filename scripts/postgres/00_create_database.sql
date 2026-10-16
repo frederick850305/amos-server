@@ -4,11 +4,11 @@
 -- 用途：仅在本机首次搭建数据库时执行一次（创建业务库与专用账号）。
 --       业务表结构不在这里维护，统一交给 Flyway（db/migration/*）。
 --
--- 用法（需以超级用户连接，本机用容器默认的 postgres 账号）：
---   docker compose -f ~/postgres-local/docker-compose.yml exec -T db \
+-- 用法（需以超级用户连接，本机用容器默认的 postgres 账号，在仓库根目录执行）：
+--   docker compose -f deploy/postgres/docker-compose.yml exec -T db \
 --     psql -U postgres -d postgres -f /dev/stdin < scripts/postgres/00_create_database.sql
 -- 或把本文件挂载进容器后执行，例如：
---   docker compose -f ~/postgres-local/docker-compose.yml exec -T db \
+--   docker compose -f deploy/postgres/docker-compose.yml exec -T db \
 --     psql -U postgres -d postgres -c "\i /var/lib/postgresql/00_create_database.sql"
 --
 -- 说明：

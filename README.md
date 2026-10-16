@@ -13,18 +13,28 @@ AMOS 后端服务（Spring Boot 3.2.5 + Flyway）。为 `amos` 前端（github.c
 
 ### 1. 本地 PostgreSQL（默认）
 
-前置：本机用 OrbStack 跑 PostgreSQL 17 开发库（容器 `pg17-local`，库名 `amos`，账号 `postgres/postgres`），参考 `docs/postgres-setup.md`。
+前置：用容器化 PostgreSQL 17 开发库（连接 `localhost:5432/amos`），容器编排随仓库分发在 `deploy/postgres/`，详见 `docs/postgres-setup.md`。
 
 ```bash
-./scripts/start.sh          # 默认 postgres profile，连 localhost:5432/amos
+# 1) 起本地 PostgreSQL（零配置，首次会拉取 postgres:17 镜像）
+docker compose -f deploy/postgres/docker-compose.yml up -d
+
+# 2) 首次创建业务库 amos 与应用角色（可重复执行）
+docker compose -f deploy/postgres/docker-compose.yml exec -T db \
+  psql -U postgres -d postgres -f /dev/stdin < scripts/postgres/00_create_database.sql
+
+# 3) 启动后端（默认 postgres profile）
+./scripts/start.sh
 ```
+
+> 连接信息 `localhost:5432`，账号 `postgres/postgres`（**仅本地开发，切勿用于生产**）。表结构与种子数据不需要手工导入：首次启动时 Flyway 会自动执行 `amos-app/src/main/resources/db/migration/V1` ~ `V11`，得到与开发机完全一致的结构。
 
 > `scripts/start.sh` 会自动设置 `JAVA_HOME`（读取仓库根 `.java-version` 指向本机 Temurin）并进入 `amos-app` 模块，无需手动 export。
 
 **启动前的自动预检**（脚本内置，避免常见“启动失败”）：
 
 1. **端口冲突检测**：默认端口 `8080`（可被 `--server.port=` 覆盖）。若已被占用（最常见是上一轮没退出的 amos-server 实例），脚本会打印占用进程 PID 并 `SIGTERM`，等待最多 8 秒释放；仍未释放则 `SIGKILL`；若强杀后仍占用则报错退出并提示用 `lsof -i :<端口>` 排查。
-2. **PostgreSQL 可达性**：默认 `postgres` profile 时探测 `localhost:5432`，不可达仅给出警告（提示先 `cd ~/postgres-local && docker compose up -d`），不阻断启动。
+2. **PostgreSQL 可达性**：默认 `postgres` profile 时探测 `localhost:5432`，不可达仅给出警告（提示先 `docker compose -f deploy/postgres/docker-compose.yml up -d`），不阻断启动。
 
 若仍想手动释放旧实例：
 
@@ -51,4 +61,5 @@ kill -9 <PID>            # 强杀
 
 ## 文档
 
+- `docs/HANDOVER.md` —— **开发环境移交说明**（两仓拉起、本地数据库、端口、常见故障、协作约定）
 - `docs/postgres-setup.md` —— 本地 PostgreSQL 搭建、Flyway 双兼容约定与 H2 双跑验证

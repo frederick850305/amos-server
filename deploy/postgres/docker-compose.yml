@@ -1,0 +1,35 @@
+# PostgreSQL 17 本地开发实例（容器化）
+#
+# 由 OrbStack / Docker Desktop 运行。数据保存在命名卷 pgdata 中，容器删除也不丢。
+#
+# 用法（在仓库根目录执行）：
+#   docker compose -f deploy/postgres/docker-compose.yml up -d
+#
+# 连接信息（仅本地开发，切勿用于生产）：
+#   host=localhost port=5432 user=postgres password=postgres db=appdb
+#
+# 环境变量可放在本目录的 .env 里覆盖默认值（参考 .env.example）；不建 .env 也能直接起。
+# 注意：amos 业务库不在这里创建，见 scripts/postgres/00_create_database.sql 与 docs/postgres-setup.md。
+
+services:
+  db:
+    image: postgres:17
+    container_name: pg17-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-appdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-appdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
+    name: pgdata
