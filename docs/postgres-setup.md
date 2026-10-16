@@ -11,6 +11,7 @@ AMOS **只用 Flyway 作为唯一的业务表结构来源**，H2 与 PostgreSQL 
 | 容器编排 | `deploy/postgres/docker-compose.yml`（+ `.env.example`） | `docker compose` | PostgreSQL 17 本地实例定义，零配置可跑 |
 | 数据库初始化 | `scripts/postgres/00_create_database.sql` | 手动执行一次 | 仅 `CREATE DATABASE` / `CREATE USER` / 授权，**不含业务表** |
 | 业务迁移 | `amos-app/src/main/resources/db/migration/V*__*.sql` | Flyway 自动 | 建表 / 约束 / 索引 / 种子数据，**H2 与 PG 共用** |
+| 开发库快照（可选） | `deploy/db-snapshot/amos_dev_snapshot_2026-10-16.sql` | 手动，仅移交/演示用 | 结构 + 115 行现有数据的一次性导出，**不是 schema 真相源**，详见其 README |
 | 测试数据清理 | `scripts/postgres/cleanup_component_test_data.sql` | 手动 | 删除 V10 造的 C-TEST 组件及其关联数据 |
 | 本地说明 | `docs/postgres-setup.md` | —— | 本文 |
 

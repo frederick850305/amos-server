@@ -12,10 +12,16 @@
 | 数据库结构与种子 | 后端仓库 `amos-app/src/main/resources/db/migration/V1__init.sql` ~ `V11__counter_measure_point_logs.sql` | **唯一 schema 来源**，Flyway 自动执行，H2/PG 双兼容 |
 | 建库脚本 | 后端仓库 `scripts/postgres/00_create_database.sql` | 仅建库/建角色，不含业务表 |
 | 本地 PG 容器编排 | 后端仓库 `deploy/postgres/docker-compose.yml`（+ `.env.example`） | PostgreSQL 17，零配置可跑 |
+| 带测试数据的库快照（可选） | 后端仓库 `deploy/db-snapshot/amos_dev_snapshot_2026-10-16.sql` | 一次性导入即得与开发机一致的结构 + 115 行数据；**非 schema 真相源** |
 | 测试数据清理 | 后端仓库 `scripts/postgres/cleanup_component_test_data.sql` | 删除 V10 造的 C-TEST 数据 |
 | 数据库搭建详解 | 后端仓库 `docs/postgres-setup.md` | Flyway 约定、双跑验证、新增表规范 |
 
 数据库脚本**不建议另外导出 SQL/dump**：克隆后端仓库 + 首次启动，Flyway 会重建出与开发机完全一致的结构与种子数据（开发机当前 `flyway_schema_history` 为 V1~V11 全 success，与仓库文件无漂移）。
+
+> 若确实想直接拿到「和开发机一模一样的带数据」的库，可用可选快照
+> `deploy/db-snapshot/amos_dev_snapshot_2026-10-16.sql`，导入方法见
+> `deploy/db-snapshot/README.md`。注意该快照含联调期测试造成的状态漂移
+> （`C-TEST-01` / `C-TEST-03` 已被安装上），做安装拆卸类验收时建议改用「空库 + Flyway 重建」。
 
 ## 2. 环境依赖
 
