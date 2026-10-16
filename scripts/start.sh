@@ -90,8 +90,8 @@ if [ "$PROFILE" != "default" ] && [ "$PROFILE" != "h2" ]; then
   if bash -c 'exec 3<>/dev/tcp/localhost/5432' 2>/dev/null; then
     echo ">>> 本地 PostgreSQL (localhost:5432) 可达"
   else
-    echo ">>> 警告：本地 PostgreSQL (localhost:5432) 不可达。请先启动 OrbStack 容器 pg17-local："
-    echo ">>>   cd ~/postgres-local && docker compose up -d"
+    echo ">>> 警告：本地 PostgreSQL (localhost:5432) 不可达。请先启动本地 PG 容器："
+    echo ">>>   docker compose -f deploy/postgres/docker-compose.yml up -d"
     echo ">>> 若数据库未就绪，应用将因无法连接而启动失败。详见 docs/postgres-setup.md"
   fi
 fi
